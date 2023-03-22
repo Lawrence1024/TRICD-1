@@ -10,7 +10,7 @@ import pandas as pd
 def get_args_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--gt_file", help = "File path for ground truth TRICD annotations files", type = str, default = "/../annotations/TRICD_vqa_val.json"
+        "--gt_file", help = "File path for ground truth TRICD annotations files", type = str, default = "/../annotations/TRICD_VQA_val.json"
     )
     parser.add_argument(
         "--results_file", help="File location for grounding results to be evaluated", type=str
@@ -32,15 +32,19 @@ def verify_pred_format(gt_data, pred_data):
     #Make sure results are ints rather than "yes" "no" answers. If not reformat
     ans = sorted(list(set([int(v) for v in pred_data.values()])))
     
-    assert ans == [0,1],\
-        "Answer format is not correct. Accepted values are 0 (no) and 1 (yes). Please re-format"
-        
+    # Wow, apparently the evaulation function would not take in a single answer
+    # assert ans == [0,1],\
+    #     "Answer format is not correct. Accepted values are 0 (no) and 1 (yes). Please re-format"
+    assert set(ans).issubset(set([0,1]))
 
 
 def VQA_eval(gt_data, pred_data):
     image_ids = [a['image_id'] for a in gt_data['annotations']]
     gt_answers = [a['answer'] for a in gt_data['annotations']]
     pred_answers = [pred_data[str(i)] for i in image_ids]
+    
+    # print(pred_answers, gt_answers)
+    # print(len(pred_answers), len(gt_answers))
 
     results = {}
     results['metric'] = 'F1_score'
@@ -52,13 +56,17 @@ def VQA_eval(gt_data, pred_data):
     ## COCO_obj
     coco_obj_img_ids = [k for k, v in id2source.items() if v=='object']
     coco_obj_gt_answers = [a['answer'] for a in gt_data['annotations'] if a['image_id'] in(coco_obj_img_ids)]
-    coco_obj_pred_answers = [pred_data[str(i)] for i in image_ids]
+    # Another bug here where we should only be grabbing COCO-obj images
+    # coco_obj_pred_answers = [pred_data[str(i)] for i in image_ids]
+    coco_obj_pred_answers = [pred_data[str(i)] for i in coco_obj_img_ids]
     results['coco_obj'] = f1_score(coco_obj_gt_answers, coco_obj_pred_answers, average = 'macro')
     
     ## COCO_rel
     coco_rel_img_ids = [k for k, v in id2source.items() if v=='relation']
     coco_rel_gt_answers = [a['answer'] for a in gt_data['annotations'] if a['image_id'] in(coco_rel_img_ids)]
-    coco_rel_pred_answers = [pred_data[str(i)] for i in image_ids]
+    # Another bug here where we should only be grabbing COCO-relation images
+    #coco_rel_pred_answers = [pred_data[str(i)] for i in image_ids]
+    coco_rel_pred_answers = [pred_data[str(i)] for i in coco_rel_img_ids]
     results['coco_rel'] = f1_score(coco_rel_gt_answers, coco_rel_pred_answers, average = 'macro')
 
     results_df = pd.DataFrame([results])

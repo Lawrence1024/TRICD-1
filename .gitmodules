@@ -1,0 +1,3 @@
+[submodule "mdetr"]
+	path = mdetr
+	url = https://github.com/ashkamath/mdetr.git
